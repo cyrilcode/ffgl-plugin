@@ -1,0 +1,3 @@
+[submodule "ffgl-host"]
+	path = ffgl-host
+	url = git@github.com:cyrilcode/ffgl-host.git
