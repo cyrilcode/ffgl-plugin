@@ -19,6 +19,14 @@ set(FFGL_PLUGIN_FILES
         ffgl-host/lib/ffgl/FFGLExtensions.cpp
         )
 
-add_library(FFGLPlugin MODULE EmptyEffect.cpp MyPlugin.h ${FFGL_PLUGIN_FILES})
-target_link_libraries(FFGLPlugin ${OPENGL_LIBRARIES})
-set_target_properties(FFGLPlugin PROPERTIES BUNDLE true)
+add_library(RGBSource MODULE EmptyEffect.cpp MyPlugin.h ${FFGL_PLUGIN_FILES})
+target_link_libraries(RGBSource ${OPENGL_LIBRARIES})
+set_target_properties(RGBSource PROPERTIES BUNDLE true)
+
+add_library(EvilShader MODULE EvilShader.cpp ${FFGL_PLUGIN_FILES})
+target_link_libraries(EvilShader ${OPENGL_LIBRARIES})
+set_target_properties(EvilShader PROPERTIES BUNDLE true)
+
+add_library(UnderwaterLife MODULE UnderwaterLife.cpp ${FFGL_PLUGIN_FILES})
+target_link_libraries(UnderwaterLife ${OPENGL_LIBRARIES})
+set_target_properties(UnderwaterLife PROPERTIES BUNDLE true)

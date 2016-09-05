@@ -5,23 +5,20 @@
 #include "EmptyEffect.h"
 
 
-FFGL_PLUGIN(EmptyEffect,"DZ00","Empty Source Effect",FF_SOURCE,"Sample FFGL Plugin",
+FFGL_PLUGIN(EmptyEffect,"DZ00","RGB Source",FF_SOURCE,"Sample FFGL Plugin",
     "by Darren Mothersele - www.darrenmothersele.com")
 
 
-char *fragmentShaderCode =
-        "uniform vec3 color;"
-                "uniform float blueness;"
-        "void main() "
-                "{"
-                "   gl_FragColor = vec4(color,1);"
-                "}";
-
+std::string fragmentShaderCode = R"GLSL(
+uniform vec3 color;
+void main()
+{
+    gl_FragColor = vec4(color,1);
+}
+)GLSL";
 
 PluginConfig EmptyEffect::getConfig() {
     PluginConfig pluginConfig;
-    pluginConfig.minInputs = 0;
-    pluginConfig.maxInputs = 0;
     pluginConfig.shaderCode = fragmentShaderCode;
     pluginConfig.params.push_back({"Red", FF_TYPE_STANDARD, 0.5f});
     pluginConfig.params.push_back({"Green", FF_TYPE_STANDARD, 0.5f});
@@ -37,11 +34,4 @@ void EmptyEffect::process(std::vector<float> &paramValues, FFGLExtensions &exten
 {
     extensions.glUniform3fARB(colorLocation, paramValues[0], paramValues[1], paramValues[2]);
 }
-
-
-
-
-
-
-
 

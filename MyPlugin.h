@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <FFGLLib.h>
 
 #define FFGL_PLUGIN(CLASS,CODE,NAME,TYPE,DESC,ABOUT) \
     static CFFGLPluginInfo PluginInfo (MyPlugin<CLASS>::CreateInstance, \
@@ -35,8 +36,7 @@ public:
 
 class PluginConfig {
 public:
-    int minInputs = 0;
-    int maxInputs = 0;
+    std::vector<std::string> inputNames;
     std::vector<PluginParamInfo> params;
     std::string shaderCode;
 };
@@ -48,13 +48,15 @@ class MyPlugin : public CFreeFrameGLPlugin {
     std::unordered_map<std::string,DWORD> paramMap;
     std::vector<float> paramValues;
     DWORD paramCount;
+    DWORD inputCount;
+    std::vector<GLint> textureLocations;
 
 public:
     MyPlugin() {
         fx = FX();
         config = fx.getConfig();
-        SetMinInputs(config.minInputs);
-        SetMaxInputs(config.maxInputs);
+        SetMinInputs(static_cast<int>(config.inputNames.size()));
+        SetMaxInputs(static_cast<int>(config.inputNames.size()));
         paramCount = 0;
         for (auto i : config.params)
         {
@@ -63,27 +65,71 @@ public:
             paramCount++;
         }
         paramValues.reserve(paramCount);
+        inputCount = config.inputNames.size();
     }
     ~MyPlugin() {}
 
     DWORD ProcessOpenGL(ProcessOpenGLStruct* pGL)
     {
+        if (pGL->numInputTextures < inputCount) return FF_FAIL;
+
         shader.BindShader();
 
-        fx.process(paramValues, extensions);
+        if (inputCount > 0)
+        {
+            FFGLTextureStruct &Texture = *(pGL->inputTextures[0]);
+            extensions.glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, Texture.Handle);
+            FFGLTexCoords maxCoords = GetMaxGLTexCoords(Texture);
 
-        glEnable(GL_TEXTURE_2D);
-        glBegin(GL_QUADS);
-        glTexCoord2f(0.0, 0.0);
-        glVertex2f(-1.0f, -1.0f);
-        glTexCoord2f(0.0, 1.0);
-        glVertex2f(-1.0f,  1.0);
-        glTexCoord2f(1.0, 1.0);
-        glVertex2f( 1.0,  1.0);
-        glTexCoord2f(1.0, 0.0);
-        glVertex2f( 1.0, -1.0f);
-        glEnd();
-        glDisable(GL_TEXTURE_2D);
+            fx.process(paramValues, extensions);
+
+//            glEnable(GL_TEXTURE_2D);
+//            glBegin(GL_QUADS);
+//            glTexCoord2f(0.0, 0.0);
+//            glVertex2f(-1.0f, -1.0f);
+//            glTexCoord2f(0.0, 1.0);
+//            glVertex2f(-1.0f,  1.0);
+//            glTexCoord2f(1.0, 1.0);
+//            glVertex2f( 1.0,  1.0);
+//            glTexCoord2f(1.0, 0.0);
+//            glVertex2f( 1.0, -1.0f);
+//            glEnd();
+//            glDisable(GL_TEXTURE_2D);
+
+            glEnable(GL_TEXTURE_2D);
+
+            glBegin(GL_QUADS);
+
+            //lower left
+            glTexCoord2f(0,0);
+            glVertex2f(-1,-1);
+
+            //upper left
+            glTexCoord2f(0, maxCoords.t);
+            glVertex2f(-1,1);
+
+            //upper right
+            glTexCoord2f(maxCoords.s, maxCoords.t);
+            glVertex2f(1,1);
+
+            //lower right
+            glTexCoord2f(maxCoords.s, 0);
+            glVertex2f(1,-1);
+            glEnd();
+
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
+        else
+        {
+            fx.process(paramValues, extensions);
+            glBegin(GL_QUADS);
+            glVertex2f(-1.0f, -1.0f);
+            glVertex2f(-1.0f,  1.0);
+            glVertex2f( 1.0,  1.0);
+            glVertex2f( 1.0, -1.0f);
+            glEnd();
+        }
 
         shader.UnbindShader();
         return FF_SUCCESS;
@@ -97,6 +143,12 @@ public:
         shader.SetExtensions(&extensions);
         shader.Compile(vertexShaderCode,config.shaderCode.c_str());
         shader.BindShader();
+        for (auto i : config.inputNames)
+        {
+            GLint texLoc = shader.FindUniform(i.c_str());
+            textureLocations.push_back(texLoc);
+            extensions.glUniform1iARB(texLoc, 0);
+        }
         fx.init(shader);
         shader.UnbindShader();
         return FF_SUCCESS;
