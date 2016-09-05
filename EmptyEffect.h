@@ -9,16 +9,16 @@
 
 class EmptyEffect {
 
-    FFGLShader shader;
+    float redness = 0.5f;
+    float greenness = 0.5f;
+    float blueness = 0.5f;
+    GLint colorLocation;
 
 public:
+    PluginConfig getConfig();
 
-    DWORD init(FFGLExtensions &extensions);
-
-    DWORD deinit();
-
-    DWORD process();
-
+    void init(FFGLShader &shader);
+    void process(std::vector<float> &paramValues, FFGLExtensions &extensions);
 
 };
 

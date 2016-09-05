@@ -4,72 +4,39 @@
 
 #include "EmptyEffect.h"
 
-static CFFGLPluginInfo PluginInfo (
-        MyPlugin<EmptyEffect>::CreateInstance,	// Create method
-        "DZ00",								// Plugin unique ID
-        "Empty Source Effect",					// Plugin name
-        1,						   			// API major version number
-        000,								  // API minor version number
-        1,										// Plugin major version number
-        000,									// Plugin minor version number
-        FF_SOURCE,						// Plugin type
-        "Sample FFGL plugin",	// Plugin description
-        "by Darren Mothersele - www.darrenmothersele.com" // About
-);
 
+FFGL_PLUGIN(EmptyEffect,"DZ00","Empty Source Effect",FF_SOURCE,"Sample FFGL Plugin",
+    "by Darren Mothersele - www.darrenmothersele.com")
 
-char *vertexShaderCode =
-        "void main()"
-                "{"
-                "  gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"
-                "  gl_TexCoord[1] = gl_MultiTexCoord1;"
-                "  gl_FrontColor = gl_Color;"
-                "}";
 
 char *fragmentShaderCode =
+        "uniform vec3 color;"
+                "uniform float blueness;"
         "void main() "
                 "{"
-                "   gl_FragColor = vec4(1,0,0,1);"
+                "   gl_FragColor = vec4(color,1);"
                 "}";
 
 
-DWORD EmptyEffect::init(FFGLExtensions &extensions) {
-    shader.SetExtensions(&extensions);
-    shader.Compile(vertexShaderCode,fragmentShaderCode);
-
-    shader.BindShader();
-    // init shader
-    shader.UnbindShader();
-
-    return FF_SUCCESS;
+PluginConfig EmptyEffect::getConfig() {
+    PluginConfig pluginConfig;
+    pluginConfig.minInputs = 0;
+    pluginConfig.maxInputs = 0;
+    pluginConfig.shaderCode = fragmentShaderCode;
+    pluginConfig.params.push_back({"Red", FF_TYPE_STANDARD, 0.5f});
+    pluginConfig.params.push_back({"Green", FF_TYPE_STANDARD, 0.5f});
+    pluginConfig.params.push_back({"Blue", FF_TYPE_STANDARD, 0.5f});
+    return pluginConfig;
 }
 
-DWORD EmptyEffect::deinit() {
-    shader.FreeGLResources();
-    return FF_SUCCESS;
+void EmptyEffect::init(FFGLShader &shader) {
+    colorLocation = shader.FindUniform("color");
 }
 
-DWORD EmptyEffect::process() {
-
-    shader.BindShader();
-
-    glEnable(GL_TEXTURE_2D);
-    glBegin(GL_QUADS);
-    glTexCoord2f(0.0, 0.0);
-    glVertex2f(-1.0f, -1.0f);
-    glTexCoord2f(0.0, 1.0);
-    glVertex2f(-1.0f,  1.0);
-    glTexCoord2f(1.0, 1.0);
-    glVertex2f( 1.0,  1.0);
-    glTexCoord2f(1.0, 0.0);
-    glVertex2f( 1.0, -1.0f);
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
-
-    shader.UnbindShader();
-    return FF_SUCCESS;
+void EmptyEffect::process(std::vector<float> &paramValues, FFGLExtensions &extensions)
+{
+    extensions.glUniform3fARB(colorLocation, paramValues[0], paramValues[1], paramValues[2]);
 }
-
 
 
 
